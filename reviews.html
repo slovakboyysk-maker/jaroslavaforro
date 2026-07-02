@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reviews | Jaroslava Forro Photography</title>
+
+<style>
+body{
+    margin:0;
+    font-family:Arial,sans-serif;
+    background:#111;
+    color:white;
+}
+
+header{
+    background:#000;
+    padding:20px;
+    text-align:center;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    margin:0 15px;
+}
+
+.container{
+    width:90%;
+    max-width:900px;
+    margin:auto;
+    padding:40px 0;
+}
+
+h1{
+    text-align:center;
+    margin-bottom:30px;
+}
+
+form{
+    background:#1b1b1b;
+    padding:25px;
+    border-radius:12px;
+    margin-bottom:40px;
+}
+
+input,textarea,select{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+}
+
+button{
+    width:100%;
+    padding:14px;
+    background:#d4af37;
+    border:none;
+    color:black;
+    font-weight:bold;
+    cursor:pointer;
+    border-radius:8px;
+    font-size:16px;
+}
+
+button:hover{
+    background:#f0c94c;
+}
+
+.review{
+    background:#1b1b1b;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+.stars{
+    color:gold;
+    font-size:20px;
+}
+
+footer{
+    text-align:center;
+    padding:30px;
+    color:#999;
+}
+</style>
+
+</head>
+<body>
+
+<header>
+
+<h2>Jaroslava Forro Photography</h2>
+
+<nav>
+<a href="index.html">Home</a>
+<a href="gallery.html">Gallery</a>
+<a href="reviews.html">Reviews</a>
+<a href="contact.html">Contact</a>
+</nav>
+
+</header>
+
+<div class="container">
+
+<h1>Client Reviews</h1>
+
+<form id="reviewForm">
+
+<input
+type="text"
+id="name"
+placeholder="Your Name"
+required>
+
+<select id="rating">
+
+<option value="5">★★★★★</option>
+<option value="4">★★★★☆</option>
+<option value="3">★★★☆☆</option>
+<option value="2">★★☆☆☆</option>
+<option value="1">★☆☆☆☆</option>
+
+</select>
+
+<textarea
+id="review"
+placeholder="Write your review..."
+required></textarea>
+
+<button type="submit">
+Submit Review
+</button>
+
+</form>
+
+<div id="reviews"></div>
+
+</div>
+
+<footer>
+
+© 2025 Jaroslava Forro Photography
+
+</footer>
+
+<script>
+
+const reviewForm=document.getElementById("reviewForm");
+const reviewsDiv=document.getElementById("reviews");
+
+let reviews=JSON.parse(localStorage.getItem("reviews"))||[];
+
+function displayReviews(){
+
+reviewsDiv.innerHTML="";
+
+reviews.reverse().forEach(r=>{
+
+reviewsDiv.innerHTML+=`
+
+<div class="review">
+
+<h3>${r.name}</h3>
+
+<div class="stars">${"★".repeat(r.rating)}${"☆".repeat(5-r.rating)}</div>
+
+<p>${r.review}</p>
+
+</div>
+
+`;
+
+});
+
+}
+
+displayReviews();
+
+reviewForm.addEventListener("submit",function(e){
+
+e.preventDefault();
+
+reviews.push({
+
+name:document.getElementById("name").value,
+
+rating:Number(document.getElementById("rating").value),
+
+review:document.getElementById("review").value
+
+});
+
+localStorage.setItem("reviews",JSON.stringify(reviews));
+
+reviewForm.reset();
+
+displayReviews();
+
+});
+
+</script>
+
+</body>
+</html>
