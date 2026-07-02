@@ -2,6 +2,7 @@ const PASSWORD = "Jaroslava2025";
 const MANTLE_NAMESPACE = STORAGE_CONFIG.mantleNamespace;
 const MANTLE_KEY = STORAGE_CONFIG.mantleKey;
 const MANTLE_BASE = `https://mantledb.sh/v2/${MANTLE_NAMESPACE}`;
+const MAX_IMAGE_BYTES = 50000;
 
 let photosCache = [];
 let reviewsCache = [];
@@ -20,19 +21,25 @@ function escapeHtml(text) {
 }
 
 async function mantleRequest(path, method = "GET", body = null) {
-  const options = {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Mantle-Key": MANTLE_KEY
+  let response;
+
+  try {
+    const options = {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        "X-Mantle-Key": MANTLE_KEY
+      }
+    };
+
+    if (body !== null) {
+      options.body = JSON.stringify(body);
     }
-  };
 
-  if (body !== null) {
-    options.body = JSON.stringify(body);
+    response = await fetch(`${MANTLE_BASE}${path}`, options);
+  } catch (error) {
+    throw new Error("Could not connect to site storage. Check your internet connection and try again.");
   }
-
-  const response = await fetch(`${MANTLE_BASE}${path}`, options);
 
   if (response.status === 404) {
     return null;
@@ -41,7 +48,11 @@ async function mantleRequest(path, method = "GET", body = null) {
   const text = await response.text();
 
   if (!response.ok) {
-    throw new Error(text || "Could not reach site storage.");
+    if (response.status === 413 || text.includes("64 KB")) {
+      throw new Error("Image is too large. Try a smaller photo.");
+    }
+
+    throw new Error(text || "Could not save to site storage.");
   }
 
   if (!text) {
@@ -55,37 +66,12 @@ async function mantleRequest(path, method = "GET", body = null) {
   }
 }
 
-async function loadPhotos() {
-  const photos = await mantleRequest("/photos");
-  photosCache = Array.isArray(photos) ? photos : [];
-  return photosCache;
+function dataUrlByteSize(dataUrl) {
+  const base64 = dataUrl.split(",")[1] || "";
+  return Math.ceil((base64.length * 3) / 4);
 }
 
-async function loadReviews() {
-  const reviews = await mantleRequest("/reviews");
-  reviewsCache = Array.isArray(reviews) ? reviews : [];
-  return reviewsCache;
-}
-
-function getPhotos() {
-  return photosCache;
-}
-
-function getReviews() {
-  return reviewsCache;
-}
-
-async function savePhotos(photos) {
-  await mantleRequest("/photos", "POST", photos);
-  photosCache = photos;
-}
-
-async function saveReviews(reviews) {
-  await mantleRequest("/reviews", "POST", reviews);
-  reviewsCache = reviews;
-}
-
-function resizeImage(file) {
+function resizeToDataUrl(file, maxSize, quality) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -93,7 +79,6 @@ function resizeImage(file) {
       const image = new Image();
 
       image.onload = function () {
-        const maxSize = 1400;
         let width = image.width;
         let height = image.height;
 
@@ -113,43 +98,81 @@ function resizeImage(file) {
 
         const context = canvas.getContext("2d");
         context.drawImage(image, 0, 0, width, height);
-
-        canvas.toBlob(function (blob) {
-          if (!blob) {
-            reject(new Error("Could not process image."));
-            return;
-          }
-
-          resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
-        }, "image/jpeg", 0.85);
+        resolve(canvas.toDataURL("image/jpeg", quality));
       };
 
-      image.onerror = reject;
+      image.onerror = () => reject(new Error("Could not read image file."));
       image.src = reader.result;
     };
 
-    reader.onerror = reject;
+    reader.onerror = () => reject(new Error("Could not read image file."));
     reader.readAsDataURL(file);
   });
 }
 
-async function uploadImageToCatbox(file) {
-  const formData = new FormData();
-  formData.append("reqtype", "fileupload");
-  formData.append("fileToUpload", file);
+async function compressImage(file) {
+  let quality = 0.82;
+  let maxSize = 1200;
 
-  const response = await fetch("https://catbox.moe/user/api.php", {
-    method: "POST",
-    body: formData
-  });
+  while (quality >= 0.35) {
+    const dataUrl = await resizeToDataUrl(file, maxSize, quality);
 
-  const url = (await response.text()).trim();
+    if (dataUrlByteSize(dataUrl) <= MAX_IMAGE_BYTES) {
+      return dataUrl;
+    }
 
-  if (!url.startsWith("http")) {
-    throw new Error("Image upload failed.");
+    quality -= 0.08;
+    maxSize -= 120;
   }
 
-  return url;
+  throw new Error("Image is too large. Please choose a smaller photo.");
+}
+
+async function loadPhotos() {
+  const index = await mantleRequest("/photos-index");
+  const entries = Array.isArray(index) ? index : [];
+
+  if (entries.length === 0) {
+    photosCache = [];
+    return photosCache;
+  }
+
+  const photos = await Promise.all(entries.map(async (entry) => {
+    const stored = await mantleRequest(`/photo-${entry.id}`);
+
+    return {
+      id: entry.id,
+      name: entry.name,
+      caption: entry.caption,
+      image: stored?.image || ""
+    };
+  }));
+
+  photosCache = photos.filter((photo) => photo.image);
+  return photosCache;
+}
+
+async function loadReviews() {
+  const reviews = await mantleRequest("/reviews");
+  reviewsCache = Array.isArray(reviews) ? reviews : [];
+  return reviewsCache;
+}
+
+function getPhotos() {
+  return photosCache;
+}
+
+function getReviews() {
+  return reviewsCache;
+}
+
+async function savePhotoIndex(entries) {
+  await mantleRequest("/photos-index", "POST", entries);
+}
+
+async function saveReviews(reviews) {
+  await mantleRequest("/reviews", "POST", reviews);
+  reviewsCache = reviews;
 }
 
 function login(event) {
@@ -188,13 +211,16 @@ async function addPhoto(event) {
     submitButton.disabled = true;
     submitButton.textContent = "Uploading...";
 
-    const resizedFile = await resizeImage(file);
-    const imageUrl = await uploadImageToCatbox(resizedFile);
-    const photos = [...getPhotos()];
+    const image = await compressImage(file);
+    const id = Date.now().toString();
+    const index = await mantleRequest("/photos-index") || [];
 
-    photos.unshift({ name, caption, image: imageUrl });
-    await savePhotos(photos);
+    await mantleRequest(`/photo-${id}`, "POST", { image });
 
+    index.unshift({ id, name, caption });
+    await savePhotoIndex(index);
+
+    await loadPhotos();
     document.getElementById("photoForm").reset();
     await displayDashboardPhotos();
     alert("Photo uploaded. Everyone can see it now.");
@@ -208,9 +234,13 @@ async function addPhoto(event) {
 
 async function deletePhoto(index) {
   try {
-    const photos = [...getPhotos()];
-    photos.splice(index, 1);
-    await savePhotos(photos);
+    const photo = getPhotos()[index];
+    if (!photo) return;
+
+    const remainingIndex = (await mantleRequest("/photos-index") || []).filter((entry) => entry.id !== photo.id);
+    await savePhotoIndex(remainingIndex);
+    await mantleRequest(`/photo-${photo.id}`, "DELETE");
+    await loadPhotos();
     await displayDashboardPhotos();
   } catch (error) {
     alert(error.message || "Could not delete photo.");
@@ -220,6 +250,8 @@ async function deletePhoto(index) {
 async function displayDashboardPhotos() {
   const galleryList = document.getElementById("galleryList");
   if (!galleryList) return;
+
+  galleryList.innerHTML = "<p>Loading photos...</p>";
 
   await loadPhotos();
   const photos = getPhotos();
