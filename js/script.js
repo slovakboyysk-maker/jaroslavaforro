@@ -207,12 +207,6 @@ async function addPhoto(event) {
 
   try {
     submitButton.disabled = true;
-    submitButton.textContent = "Checking file...";
-
-    if (typeof validateUploadFile === "function") {
-      await validateUploadFile(file);
-    }
-
     submitButton.textContent = "Uploading...";
 
     const image = await compressImage(file);
