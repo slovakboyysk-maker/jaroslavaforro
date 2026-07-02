@@ -1,203 +1,86 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <div class="container">
-    <h2>Welcome</h2>
-
-    <p>
-        Professional photography capturing beautiful moments, portraits,
-        family sessions and special events.
-    </p>
-</div>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Jaroslava Forro Photography</title>
-
-<style>
-*{
-    margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:Arial, sans-serif;
-}
-
-body{
-    background:#f5f5f5;
-    color:#222;
-}
-
-header{
-    background:#111;
-    color:white;
-    text-align:center;
-    padding:40px;
-}
-
-header h1{
-    font-size:48px;
-}
-
-header p{
-    color:#ccc;
-    margin-top:10px;
-}
-
-nav{
-    background:#222;
-    padding:15px;
-    text-align:center;
-}
-
-nav a{
-    color:white;
-    text-decoration:none;
-    margin:20px;
-    font-weight:bold;
-}
-
-nav a:hover{
-    color:gold;
-}
-
-section{
-    padding:60px 10%;
-}
-
-.section-title{
-    text-align:center;
-    font-size:36px;
-    margin-bottom:40px;
-}
-
-.gallery{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-    gap:25px;
-}
-
-.card{
-    background:white;
-    border-radius:10px;
-    overflow:hidden;
-    box-shadow:0 5px 15px rgba(0,0,0,.15);
-}
-
-.card img{
-    width:100%;
-    height:350px;
-    object-fit:cover;
-}
-
-.card-content{
-    padding:20px;
-}
-
-.reviews{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-    gap:25px;
-}
-
-.review{
-    background:white;
-    padding:25px;
-    border-radius:10px;
-}
-
-footer{
-    background:#111;
-    color:white;
-    text-align:center;
-    padding:30px;
-    margin-top:50px;
-}
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-
 <header>
 <h1>Jaroslava Forro Photography</h1>
 <p>Professional Portrait & Lifestyle Photographer</p>
-</header>
-
 <nav>
-<a href="#">Home</a>
+<a href="index.html">Home</a>
 <a href="#gallery">Gallery</a>
 <a href="#reviews">Reviews</a>
-<a href="#contact">Contact</a>
+<a href="admin.html">Admin</a>
 </nav>
+</header>
 
-<section id="gallery">
-<h2 class="section-title">Latest Photography</h2>
-
-<div class="gallery">
-
-<div class="card">
-<img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=900">
-<div class="card-content">
-<h3>Emma</h3>
-<p>Golden hour portrait session.</p>
-</div>
-</div>
-
-<div class="card">
-<img src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=900">
-<div class="card-content">
-<h3>Daniel</h3>
-<p>Outdoor lifestyle photography.</p>
-</div>
-</div>
-
-<div class="card">
-<img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=900">
-<div class="card-content">
-<h3>Sophia</h3>
-<p>Professional portrait session.</p>
-</div>
-</div>
-
-</div>
-</section>
-
-<section id="reviews">
-<h2 class="section-title">Client Reviews</h2>
-
-<div class="reviews">
-
-<div class="review">
-★★★★★
-<h3>Anna</h3>
-<p>Amazing photographer. Beautiful pictures!</p>
-</div>
-
-<div class="review">
-★★★★★
-<h3>Michael</h3>
-<p>Professional and friendly throughout the shoot.</p>
-</div>
-
-<div class="review">
-★★★★★
-<h3>Laura</h3>
-<p>I absolutely love my photos!</p>
-</div>
-
-</div>
-</section>
-
-<section id="contact">
-<h2 class="section-title">Contact</h2>
-
-<p style="text-align:center;">
-Email: info@jaroslavaforro.com
+<main>
+<section class="hero">
+<div class="container">
+<h2>Welcome</h2>
+<p>
+Professional photography capturing beautiful moments, portraits, family sessions and special events.
 </p>
-
+</div>
 </section>
+
+<section id="gallery" class="container">
+<h2 class="page-title">Gallery</h2>
+<div id="galleryGrid" class="gallery"></div>
+</section>
+
+<section id="reviews" class="container">
+<section class="card">
+<h2>Leave a Review</h2>
+<form id="publicReviewForm">
+<input id="name" placeholder="Your Name" required>
+<select id="rating">
+<option value="★★★★★">★★★★★</option>
+<option value="★★★★☆">★★★★☆</option>
+<option value="★★★☆☆">★★★☆☆</option>
+<option value="★★☆☆☆">★★☆☆☆</option>
+<option value="★☆☆☆☆">★☆☆☆☆</option>
+</select>
+<textarea id="message" placeholder="Write your review..." required></textarea>
+<button type="submit">Submit Review</button>
+</form>
+</section>
+
+<h2 class="page-title">Client Reviews</h2>
+<div id="reviewsList" class="reviews-grid"></div>
+</section>
+
+<section class="container contact">
+<h2 class="page-title">Contact</h2>
+<p>Email: info@jaroslavaforro.com</p>
+</section>
+</main>
+
+<div id="lightbox" class="lightbox">
+<button class="close" type="button" onclick="closeImage()">×</button>
+<img id="lightboxImage" alt="Selected gallery photograph">
+</div>
 
 <footer>
 © 2026 Jaroslava Forro Photography
 </footer>
 
+<script src="js/script.js"></script>
+<script>
+displayGallery();
+displayPublicReviews();
+
+document.getElementById("publicReviewForm").addEventListener("submit", function (event) {
+  submitPublicReview(event);
+});
+</script>
 </body>
 </html>
