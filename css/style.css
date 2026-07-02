@@ -1,91 +1,211 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, Helvetica, sans-serif;
+/* Reset */
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial, Helvetica, sans-serif;
 }
 
-body {
-    background: #f5f5f5;
-    color: #333;
+/* Body */
+
+body{
+    background:#111;
+    color:white;
+    line-height:1.6;
 }
 
-header {
-    background: #111;
-    color: white;
-    padding: 20px;
-    text-align: center;
+/* Header */
+
+header{
+    background:#000;
+    padding:25px;
+    text-align:center;
+    border-bottom:3px solid gold;
 }
 
-nav {
-    margin-top: 15px;
+header h1{
+    font-size:42px;
+    margin-bottom:10px;
 }
 
-nav a {
-    color: white;
-    text-decoration: none;
-    margin: 0 15px;
-    font-weight: bold;
+header p{
+    color:#ccc;
 }
 
-nav a:hover {
-    color: gold;
+/* Navigation */
+
+nav{
+    margin-top:15px;
 }
 
-.container {
-    width: 90%;
-    max-width: 1100px;
-    margin: auto;
-    padding: 40px 0;
+nav a{
+    color:white;
+    text-decoration:none;
+    margin:0 15px;
+    font-weight:bold;
+    transition:.3s;
 }
 
-h1, h2 {
-    margin-bottom: 20px;
+nav a:hover{
+    color:gold;
 }
 
-.gallery {
-    display: grid;
-    grid-template-columns: repeat(auto-fit,minmax(250px,1fr));
-    gap: 20px;
+/* Main container */
+
+.container{
+    width:90%;
+    max-width:1200px;
+    margin:40px auto;
 }
 
-.gallery img {
-    width: 100%;
-    border-radius: 10px;
-    box-shadow: 0 5px 10px rgba(0,0,0,.2);
+/* Cards */
+
+.card{
+    background:#1f1f1f;
+    border-radius:12px;
+    padding:25px;
+    margin-bottom:30px;
+    box-shadow:0 0 15px rgba(0,0,0,.4);
 }
 
-.review {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+.card h2{
+    color:gold;
+    margin-bottom:20px;
 }
+
+/* Gallery */
+
+.gallery{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+    gap:25px;
+}
+
+.gallery img{
+    width:100%;
+    border-radius:12px;
+    transition:.3s;
+    cursor:pointer;
+}
+
+.gallery img:hover{
+    transform:scale(1.03);
+}
+
+/* Reviews */
+
+.review{
+    background:#222;
+    padding:20px;
+    border-radius:10px;
+    margin-bottom:20px;
+}
+
+.review h3{
+    color:gold;
+}
+
+.stars{
+    color:gold;
+    font-size:20px;
+    margin:10px 0;
+}
+
+/* Forms */
 
 input,
 textarea,
-button {
-    width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
+select{
+    width:100%;
+    padding:12px;
+    margin:10px 0;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
 }
 
-button {
-    background: #111;
-    color: white;
-    border: none;
-    cursor: pointer;
+textarea{
+    resize:vertical;
+    min-height:120px;
 }
 
-button:hover {
-    background: #333;
+/* Buttons */
+
+button{
+    background:gold;
+    color:black;
+    border:none;
+    padding:12px 20px;
+    border-radius:8px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    transition:.3s;
 }
 
-.admin-card {
-    background: white;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 30px;
+button:hover{
+    background:#d4af37;
+}
+
+/* Dashboard photo rows */
+
+.photo{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    background:#2a2a2a;
+    padding:15px;
+    border-radius:8px;
+    margin-top:15px;
+}
+
+/* Logout button */
+
+.logout{
+    position:fixed;
+    top:20px;
+    right:20px;
+    background:#c62828;
+    color:white;
+}
+
+.logout:hover{
+    background:#a81d1d;
+}
+
+/* Footer */
+
+footer{
+    background:#000;
+    color:#aaa;
+    text-align:center;
+    padding:30px;
+    margin-top:50px;
+}
+
+/* Mobile */
+
+@media(max-width:768px){
+
+header h1{
+    font-size:32px;
+}
+
+.gallery{
+    grid-template-columns:1fr;
+}
+
+.photo{
+    flex-direction:column;
+    gap:15px;
+    align-items:flex-start;
+}
+
+.logout{
+    position:static;
+    width:100%;
+    margin-bottom:20px;
+}
+
 }
