@@ -1,18 +1,10 @@
-const ALLOWED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
-const BLOCKED_EXTENSIONS = [".exe", ".bat", ".cmd", ".com", ".msi", ".scr", ".js", ".vbs", ".ps1", ".php", ".html", ".htm", ".svg", ".zip", ".rar", ".7z"];
+const BLOCKED_EXTENSIONS = [".exe", ".bat", ".cmd", ".com", ".msi", ".scr", ".js", ".vbs", ".ps1", ".php", ".html", ".htm", ".zip", ".rar", ".7z"];
+const ALLOWED_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif", ".bmp", ".heic", ".heif"];
 const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-
-const IMAGE_SIGNATURES = [
-  { type: "jpeg", bytes: [0xff, 0xd8, 0xff] },
-  { type: "png", bytes: [0x89, 0x50, 0x4e, 0x47] },
-  { type: "gif", bytes: [0x47, 0x49, 0x46] },
-  { type: "webp", bytes: [0x52, 0x49, 0x46, 0x46] }
-];
 
 const DANGEROUS_SIGNATURES = [
   { name: "Windows executable", bytes: [0x4d, 0x5a] },
-  { name: "ELF executable", bytes: [0x7f, 0x45, 0x4c, 0x46] },
-  { name: "ZIP archive", bytes: [0x50, 0x4b, 0x03, 0x04] }
+  { name: "ELF executable", bytes: [0x7f, 0x45, 0x4c, 0x46] }
 ];
 
 function bytesMatch(buffer, signature, offset = 0) {
@@ -24,8 +16,14 @@ function getFileExtension(filename) {
   return dot === -1 ? "" : filename.slice(dot).toLowerCase();
 }
 
-function detectImageType(buffer) {
-  return IMAGE_SIGNATURES.find((signature) => bytesMatch(buffer, signature.bytes))?.type || null;
+function fileLooksLikeImage(file) {
+  const extension = getFileExtension(file.name);
+
+  if (ALLOWED_EXTENSIONS.includes(extension)) {
+    return true;
+  }
+
+  return Boolean(file.type && file.type.startsWith("image/"));
 }
 
 function findDangerousContent(buffer) {
@@ -37,40 +35,37 @@ function findDangerousContent(buffer) {
     }
   }
 
-  const text = new TextDecoder().decode(view.slice(0, 256)).toLowerCase();
-
-  if (text.includes("<script") || text.includes("<?php") || text.includes("javascript:")) {
-    return "embedded script content";
-  }
-
   return null;
 }
 
-async function readFileHeader(file, length = 512) {
-  const slice = file.slice(0, length);
-  return slice.arrayBuffer();
+async function readFileHeader(file, length = 64) {
+  return file.slice(0, length).arrayBuffer();
 }
 
-function verifyDataUrlImage(dataUrl) {
-  if (!dataUrl.startsWith("data:image/")) {
-    throw new Error("Download blocked: file is not a valid image.");
-  }
+function verifyImageLoads(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
 
-  const base64 = dataUrl.split(",")[1];
+    reader.onload = function () {
+      const image = new Image();
 
-  if (!base64) {
-    throw new Error("Download blocked: corrupted image data.");
-  }
+      image.onload = function () {
+        resolve(true);
+      };
 
-  const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
+      image.onerror = function () {
+        reject(new Error("Could not read image file. Try JPG or PNG instead."));
+      };
 
-  for (let index = 0; index < binary.length; index += 1) {
-    bytes[index] = binary.charCodeAt(index);
-  }
+      image.src = reader.result;
+    };
 
-  const header = bytes.buffer.slice(0, Math.min(bytes.length, 512));
-  return runSecurityScan(header, "download");
+    reader.onerror = function () {
+      reject(new Error("Could not read image file."));
+    };
+
+    reader.readAsDataURL(file);
+  });
 }
 
 async function validateUploadFile(file) {
@@ -88,8 +83,8 @@ async function validateUploadFile(file) {
     throw new Error("This file type is not allowed. Please upload an image only.");
   }
 
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type) && !file.type.startsWith("image/")) {
-    throw new Error("Only JPG, PNG, WEBP, and GIF images are allowed.");
+  if (!fileLooksLikeImage(file)) {
+    throw new Error("Only image files are allowed.");
   }
 
   const header = await readFileHeader(file);
@@ -99,37 +94,14 @@ async function validateUploadFile(file) {
     throw new Error(`Upload blocked: possible ${dangerous} detected.`);
   }
 
-  const imageType = detectImageType(header);
-
-  if (!imageType) {
-    throw new Error("Upload blocked: file does not look like a real image.");
-  }
-
+  await verifyImageLoads(file);
   return true;
 }
 
-function runSecurityScan(buffer, context = "download") {
-  const dangerous = findDangerousContent(buffer);
-
-  if (dangerous) {
-    throw new Error(`${context === "upload" ? "Upload" : "Download"} blocked: possible ${dangerous} detected.`);
+function verifyDataUrlImage(dataUrl) {
+  if (!dataUrl.startsWith("data:image/")) {
+    throw new Error("Download blocked: file is not a valid image.");
   }
-
-  const imageType = detectImageType(buffer);
-
-  if (!imageType) {
-    throw new Error(`${context === "upload" ? "Upload" : "Download"} blocked: file failed safety checks.`);
-  }
-
-  return {
-    safe: true,
-    imageType
-  };
-}
-
-async function scanBlobBeforeDownload(blob) {
-  const header = await blob.slice(0, 512).arrayBuffer();
-  return runSecurityScan(header, "download");
 }
 
 async function dataUrlToBlob(dataUrl) {
@@ -144,10 +116,7 @@ async function dataUrlToBlob(dataUrl) {
     bytes[index] = binary.charCodeAt(index);
   }
 
-  const blob = new Blob([bytes], { type: mime });
-  await scanBlobBeforeDownload(blob);
-
-  return blob;
+  return new Blob([bytes], { type: mime });
 }
 
 async function downloadPhoto(index) {
