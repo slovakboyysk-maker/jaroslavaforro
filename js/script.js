@@ -1,23 +1,155 @@
 const PASSWORD = "Jaroslava2025";
+const MANTLE_NAMESPACE = STORAGE_CONFIG.mantleNamespace;
+const MANTLE_KEY = STORAGE_CONFIG.mantleKey;
+const MANTLE_BASE = `https://mantledb.sh/v2/${MANTLE_NAMESPACE}`;
 
-function getPhotos() {
-  return JSON.parse(localStorage.getItem("photos")) || [];
+let photosCache = [];
+let reviewsCache = [];
+
+function isAdmin() {
+  return sessionStorage.getItem("admin") === "true";
 }
 
-function savePhotos(photos) {
-  localStorage.setItem("photos", JSON.stringify(photos));
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+async function mantleRequest(path, method = "GET", body = null) {
+  const options = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Mantle-Key": MANTLE_KEY
+    }
+  };
+
+  if (body !== null) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${MANTLE_BASE}${path}`, options);
+
+  if (response.status === 404) {
+    return null;
+  }
+
+  const text = await response.text();
+
+  if (!response.ok) {
+    throw new Error(text || "Could not reach site storage.");
+  }
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return text;
+  }
+}
+
+async function loadPhotos() {
+  const photos = await mantleRequest("/photos");
+  photosCache = Array.isArray(photos) ? photos : [];
+  return photosCache;
+}
+
+async function loadReviews() {
+  const reviews = await mantleRequest("/reviews");
+  reviewsCache = Array.isArray(reviews) ? reviews : [];
+  return reviewsCache;
+}
+
+function getPhotos() {
+  return photosCache;
 }
 
 function getReviews() {
-  return JSON.parse(localStorage.getItem("reviews")) || [];
+  return reviewsCache;
 }
 
-function saveReviews(reviews) {
-  localStorage.setItem("reviews", JSON.stringify(reviews));
+async function savePhotos(photos) {
+  await mantleRequest("/photos", "POST", photos);
+  photosCache = photos;
 }
 
-function isAdmin() {
-  return localStorage.getItem("admin") === "true";
+async function saveReviews(reviews) {
+  await mantleRequest("/reviews", "POST", reviews);
+  reviewsCache = reviews;
+}
+
+function resizeImage(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+
+    reader.onload = function () {
+      const image = new Image();
+
+      image.onload = function () {
+        const maxSize = 1400;
+        let width = image.width;
+        let height = image.height;
+
+        if (width > maxSize || height > maxSize) {
+          if (width > height) {
+            height = Math.round((height / width) * maxSize);
+            width = maxSize;
+          } else {
+            width = Math.round((width / height) * maxSize);
+            height = maxSize;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext("2d");
+        context.drawImage(image, 0, 0, width, height);
+
+        canvas.toBlob(function (blob) {
+          if (!blob) {
+            reject(new Error("Could not process image."));
+            return;
+          }
+
+          resolve(new File([blob], file.name.replace(/\.\w+$/, ".jpg"), { type: "image/jpeg" }));
+        }, "image/jpeg", 0.85);
+      };
+
+      image.onerror = reject;
+      image.src = reader.result;
+    };
+
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function uploadImageToCatbox(file) {
+  const formData = new FormData();
+  formData.append("reqtype", "fileupload");
+  formData.append("fileToUpload", file);
+
+  const response = await fetch("https://catbox.moe/user/api.php", {
+    method: "POST",
+    body: formData
+  });
+
+  const url = (await response.text()).trim();
+
+  if (!url.startsWith("http")) {
+    throw new Error("Image upload failed.");
+  }
+
+  return url;
 }
 
 function login(event) {
@@ -25,62 +157,71 @@ function login(event) {
 
   const password = document.getElementById("password").value;
 
-  if (password === PASSWORD) {
-    localStorage.setItem("admin", "true");
-    window.location.href = "dashboard.html";
-  } else {
+  if (password !== PASSWORD) {
     alert("Wrong password");
+    return;
   }
+
+  sessionStorage.setItem("admin", "true");
+  window.location.href = "dashboard.html";
 }
 
 function logout() {
-  localStorage.removeItem("admin");
+  sessionStorage.removeItem("admin");
   window.location.href = "admin.html";
 }
 
-function addPhoto(event) {
+async function addPhoto(event) {
   if (event) event.preventDefault();
 
   const name = document.getElementById("photoName").value.trim();
   const caption = document.getElementById("photoCaption").value.trim();
   const file = document.getElementById("photoImage").files[0];
+  const submitButton = event.target.querySelector("button[type='submit']");
 
   if (!name || !caption || !file) {
     alert("Please complete all photo fields.");
     return;
   }
 
-  const reader = new FileReader();
+  try {
+    submitButton.disabled = true;
+    submitButton.textContent = "Uploading...";
 
-  reader.onload = function () {
-    const photos = getPhotos();
+    const resizedFile = await resizeImage(file);
+    const imageUrl = await uploadImageToCatbox(resizedFile);
+    const photos = [...getPhotos()];
 
-    photos.unshift({
-      name,
-      caption,
-      image: reader.result
-    });
+    photos.unshift({ name, caption, image: imageUrl });
+    await savePhotos(photos);
 
-    savePhotos(photos);
     document.getElementById("photoForm").reset();
-    displayDashboardPhotos();
-    alert("Photo uploaded.");
-  };
-
-  reader.readAsDataURL(file);
+    await displayDashboardPhotos();
+    alert("Photo uploaded. Everyone can see it now.");
+  } catch (error) {
+    alert(error.message || "Could not upload photo.");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Upload Photo";
+  }
 }
 
-function deletePhoto(index) {
-  const photos = getPhotos();
-  photos.splice(index, 1);
-  savePhotos(photos);
-  displayDashboardPhotos();
+async function deletePhoto(index) {
+  try {
+    const photos = [...getPhotos()];
+    photos.splice(index, 1);
+    await savePhotos(photos);
+    await displayDashboardPhotos();
+  } catch (error) {
+    alert(error.message || "Could not delete photo.");
+  }
 }
 
-function displayDashboardPhotos() {
+async function displayDashboardPhotos() {
   const galleryList = document.getElementById("galleryList");
   if (!galleryList) return;
 
+  await loadPhotos();
   const photos = getPhotos();
 
   if (photos.length === 0) {
@@ -91,19 +232,22 @@ function displayDashboardPhotos() {
   galleryList.innerHTML = photos.map((photo, index) => `
     <div class="photo-item">
       <div>
-        <strong>${photo.name}</strong>
+        <strong>${escapeHtml(photo.name)}</strong>
         <br>
-        ${photo.caption}
+        ${escapeHtml(photo.caption)}
       </div>
       <button class="delete-button" type="button" onclick="deletePhoto(${index})">Delete</button>
     </div>
   `).join("");
 }
 
-function displayGallery() {
+async function displayGallery() {
   const gallery = document.getElementById("galleryGrid") || document.getElementById("gallery");
   if (!gallery) return;
 
+  gallery.innerHTML = '<div class="empty">Loading gallery...</div>';
+
+  await loadPhotos();
   const photos = getPhotos();
 
   if (photos.length === 0) {
@@ -113,10 +257,10 @@ function displayGallery() {
 
   gallery.innerHTML = photos.map((photo, index) => `
     <article class="photo-card">
-      <img src="${photo.image}" alt="${photo.name}" onclick="openImage(${index})">
+      <img src="${photo.image}" alt="${escapeHtml(photo.name)}" onclick="openImage(${index})">
       <div class="photo-info">
-        <h3>${photo.name}</h3>
-        <p>${photo.caption}</p>
+        <h3>${escapeHtml(photo.name)}</h3>
+        <p>${escapeHtml(photo.caption)}</p>
       </div>
     </article>
   `).join("");
@@ -140,10 +284,11 @@ function closeImage() {
   if (lightbox) lightbox.style.display = "none";
 }
 
-function displayPublicReviews() {
+async function displayPublicReviews() {
   const container = document.getElementById("reviewsList") || document.getElementById("reviews");
   if (!container) return;
 
+  await loadReviews();
   const reviews = getReviews();
   const admin = isAdmin();
 
@@ -154,45 +299,61 @@ function displayPublicReviews() {
 
   container.innerHTML = reviews.map((review, index) => `
     <article class="review">
-      <h3>${review.name}</h3>
-      <div class="stars">${review.rating}</div>
-      <p>${review.message}</p>
+      <h3>${escapeHtml(review.name)}</h3>
+      <div class="stars">${escapeHtml(review.rating)}</div>
+      <p>${escapeHtml(review.message)}</p>
       ${admin ? `<div class="review-actions"><button class="delete-button" type="button" onclick="deletePublicReview(${index})">Remove</button></div>` : ""}
     </article>
   `).join("");
 }
 
-function submitPublicReview(event) {
+async function submitPublicReview(event) {
   if (event) event.preventDefault();
 
   const name = document.getElementById("name").value.trim();
   const rating = document.getElementById("rating").value;
   const message = document.getElementById("message").value.trim();
+  const submitButton = event.target.querySelector("button[type='submit']");
 
   if (!name || !message) {
     alert("Please fill in all fields.");
     return;
   }
 
-  const reviews = getReviews();
-  reviews.unshift({ name, rating, message });
-  saveReviews(reviews);
-  displayPublicReviews();
-  event.target.reset();
-  alert("Thank you for your review!");
+  try {
+    submitButton.disabled = true;
+    submitButton.textContent = "Submitting...";
+
+    const reviews = [...getReviews()];
+    reviews.unshift({ name, rating, message });
+    await saveReviews(reviews);
+
+    await displayPublicReviews();
+    event.target.reset();
+    alert("Thank you for your review!");
+  } catch (error) {
+    alert(error.message || "Could not submit review.");
+  } finally {
+    submitButton.disabled = false;
+    submitButton.textContent = "Submit Review";
+  }
 }
 
-function deletePublicReview(index) {
+async function deletePublicReview(index) {
   if (!isAdmin()) return;
 
-  const reviews = getReviews();
-  reviews.splice(index, 1);
-  saveReviews(reviews);
-  displayPublicReviews();
-  displayDashboardReviews();
+  try {
+    const reviews = [...getReviews()];
+    reviews.splice(index, 1);
+    await saveReviews(reviews);
+    await displayPublicReviews();
+    await displayDashboardReviews();
+  } catch (error) {
+    alert(error.message || "Could not remove review.");
+  }
 }
 
-function addReview(event) {
+async function addReview(event) {
   if (event) event.preventDefault();
 
   const name = document.getElementById("reviewName").value.trim();
@@ -204,31 +365,35 @@ function addReview(event) {
     return;
   }
 
-  const reviews = getReviews();
+  try {
+    const reviews = [...getReviews()];
+    reviews.unshift({ name, rating, message });
+    await saveReviews(reviews);
 
-  reviews.unshift({
-    name,
-    rating,
-    message
-  });
-
-  saveReviews(reviews);
-  document.getElementById("reviewForm").reset();
-  displayDashboardReviews();
-  alert("Review added.");
+    document.getElementById("reviewForm").reset();
+    await displayDashboardReviews();
+    alert("Review added.");
+  } catch (error) {
+    alert(error.message || "Could not add review.");
+  }
 }
 
-function deleteReview(index) {
-  const reviews = getReviews();
-  reviews.splice(index, 1);
-  saveReviews(reviews);
-  displayDashboardReviews();
+async function deleteReview(index) {
+  try {
+    const reviews = [...getReviews()];
+    reviews.splice(index, 1);
+    await saveReviews(reviews);
+    await displayDashboardReviews();
+  } catch (error) {
+    alert(error.message || "Could not delete review.");
+  }
 }
 
-function displayDashboardReviews() {
+async function displayDashboardReviews() {
   const reviewList = document.getElementById("reviewList");
   if (!reviewList) return;
 
+  await loadReviews();
   const reviews = getReviews();
 
   if (reviews.length === 0) {
@@ -239,10 +404,10 @@ function displayDashboardReviews() {
   reviewList.innerHTML = reviews.map((review, index) => `
     <div class="review-item">
       <div>
-        <strong>${review.name}</strong>
+        <strong>${escapeHtml(review.name)}</strong>
         <br>
-        <span class="stars">${review.rating}</span>
-        <p>${review.message}</p>
+        <span class="stars">${escapeHtml(review.rating)}</span>
+        <p>${escapeHtml(review.message)}</p>
       </div>
       <button class="delete-button" type="button" onclick="deleteReview(${index})">Delete</button>
     </div>
@@ -250,6 +415,11 @@ function displayDashboardReviews() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  displayDashboardPhotos();
-  displayDashboardReviews();
+  if (document.getElementById("galleryList")) {
+    displayDashboardPhotos();
+  }
+
+  if (document.getElementById("reviewList")) {
+    displayDashboardReviews();
+  }
 });

@@ -12,7 +12,7 @@
 
 <body>
 <script>
-if (localStorage.getItem("admin") !== "true") {
+if (sessionStorage.getItem("admin") !== "true") {
   window.location.href = "admin.html";
 }
 </script>
