@@ -4,51 +4,66 @@
     margin:0;
     padding:0;
     box-sizing:border-box;
-    font-family:Arial, Helvetica, sans-serif;
 }
 
 /* Body */
 
 body{
-    background:#111;
-    color:white;
-    line-height:1.6;
+    background:#faf6f1;
+    color:#4a3f35;
+    line-height:1.7;
+    font-family:"Nunito", Arial, Helvetica, sans-serif;
 }
 
 /* Header */
 
 header{
-    background:#000;
-    padding:25px;
+    background:#f0e8de;
+    padding:28px 20px;
     text-align:center;
-    border-bottom:3px solid gold;
+    border-bottom:2px solid #d4c4b0;
 }
 
 header h1{
-    font-size:42px;
-    margin-bottom:10px;
+    font-family:"Lora", Georgia, serif;
+    font-size:38px;
+    margin-bottom:8px;
+    color:#5c4a3a;
+    font-weight:600;
 }
 
 header p{
-    color:#ccc;
+    color:#7a6b5d;
 }
 
 /* Navigation */
 
 nav{
-    margin-top:15px;
+    margin-top:18px;
 }
 
 nav a{
-    color:white;
+    color:#5c4a3a;
     text-decoration:none;
-    margin:0 15px;
-    font-weight:bold;
-    transition:.3s;
+    margin:0 14px;
+    font-weight:600;
+    transition:.25s;
+    padding:6px 12px;
+    border-radius:20px;
 }
 
 nav a:hover{
-    color:gold;
+    color:#c4886b;
+    background:rgba(196,136,107,.12);
+}
+
+nav a:focus,
+button:focus,
+input:focus,
+textarea:focus,
+select:focus{
+    outline:2px solid #c4886b;
+    outline-offset:3px;
 }
 
 /* Main container */
@@ -59,57 +74,163 @@ nav a:hover{
     margin:40px auto;
 }
 
+.hero{
+    background:linear-gradient(160deg,#f5ebe0,#ede0d4);
+    text-align:center;
+    padding:70px 0;
+    border-bottom:1px solid #e8ddd0;
+}
+
+.hero h2,
+.page-title{
+    font-family:"Lora", Georgia, serif;
+    color:#5c4a3a;
+    text-align:center;
+    margin-bottom:22px;
+    font-size:32px;
+    font-weight:600;
+}
+
+.hero p,
+.contact p{
+    max-width:680px;
+    margin:0 auto;
+    text-align:center;
+    color:#6b5d50;
+    font-size:17px;
+}
+
+.button-link{
+    display:inline-block;
+    background:#c4886b;
+    color:#fff;
+    padding:12px 24px;
+    border-radius:24px;
+    text-decoration:none;
+    font-weight:600;
+    transition:.25s;
+}
+
+.button-link:hover{
+    background:#b0775c;
+}
+
 /* Cards */
 
 .card{
-    background:#1f1f1f;
-    border-radius:12px;
-    padding:25px;
+    background:#fff;
+    border-radius:16px;
+    padding:28px;
     margin-bottom:30px;
-    box-shadow:0 0 15px rgba(0,0,0,.4);
+    box-shadow:0 4px 20px rgba(92,74,58,.08);
+    border:1px solid #ede5db;
 }
 
 .card h2{
-    color:gold;
-    margin-bottom:20px;
+    font-family:"Lora", Georgia, serif;
+    color:#5c4a3a;
+    margin-bottom:18px;
+    font-size:24px;
 }
 
 /* Gallery */
 
 .gallery{
     display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-    gap:25px;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+    gap:24px;
 }
 
 .gallery img{
     width:100%;
-    border-radius:12px;
+    height:300px;
+    object-fit:cover;
+    border-radius:12px 12px 0 0;
     transition:.3s;
     cursor:pointer;
 }
 
 .gallery img:hover{
-    transform:scale(1.03);
+    opacity:.92;
+}
+
+.photo-card{
+    background:#fff;
+    border-radius:16px;
+    overflow:hidden;
+    box-shadow:0 4px 20px rgba(92,74,58,.08);
+    border:1px solid #ede5db;
+    transition:.3s;
+}
+
+.photo-card:hover{
+    transform:translateY(-3px);
+    box-shadow:0 8px 28px rgba(92,74,58,.12);
+}
+
+.photo-card img{
+    border-radius:0;
+}
+
+.photo-info{
+    padding:18px 20px;
+}
+
+.photo-info h3{
+    font-family:"Lora", Georgia, serif;
+    color:#5c4a3a;
+    margin-bottom:8px;
+}
+
+.photo-info p{
+    color:#7a6b5d;
+    font-size:15px;
+}
+
+.empty{
+    grid-column:1/-1;
+    text-align:center;
+    padding:60px 20px;
+    color:#9a8b7d;
+    font-size:18px;
+    background:#fff;
+    border-radius:16px;
+    border:1px dashed #d4c4b0;
 }
 
 /* Reviews */
 
 .review{
-    background:#222;
-    padding:20px;
-    border-radius:10px;
-    margin-bottom:20px;
+    background:#fff;
+    padding:22px;
+    border-radius:14px;
+    border:1px solid #ede5db;
+    box-shadow:0 4px 16px rgba(92,74,58,.06);
 }
 
 .review h3{
-    color:gold;
+    font-family:"Lora", Georgia, serif;
+    color:#5c4a3a;
+}
+
+.reviews-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:22px;
 }
 
 .stars{
-    color:gold;
-    font-size:20px;
-    margin:10px 0;
+    color:#c4886b;
+    font-size:18px;
+    margin:8px 0;
+}
+
+.review p{
+    color:#6b5d50;
+}
+
+.review-actions{
+    margin-top:12px;
 }
 
 /* Forms */
@@ -118,34 +239,49 @@ input,
 textarea,
 select{
     width:100%;
-    padding:12px;
+    padding:12px 14px;
     margin:10px 0;
-    border:none;
-    border-radius:8px;
+    border:1px solid #ddd2c4;
+    border-radius:10px;
     font-size:16px;
+    font-family:"Nunito", Arial, sans-serif;
+    background:#fdfbf8;
+    color:#4a3f35;
 }
 
-textarea{
-    resize:vertical;
-    min-height:120px;
+input::placeholder,
+textarea::placeholder{
+    color:#a89888;
 }
 
 /* Buttons */
 
 button{
-    background:gold;
-    color:black;
+    background:#c4886b;
+    color:#fff;
     border:none;
-    padding:12px 20px;
-    border-radius:8px;
+    padding:12px 22px;
+    border-radius:24px;
     font-size:16px;
-    font-weight:bold;
+    font-weight:600;
+    font-family:"Nunito", Arial, sans-serif;
     cursor:pointer;
-    transition:.3s;
+    transition:.25s;
 }
 
 button:hover{
-    background:#d4af37;
+    background:#b0775c;
+}
+
+.delete-button{
+    background:#c97b7b;
+    color:#fff;
+    padding:8px 16px;
+    font-size:14px;
+}
+
+.delete-button:hover{
+    background:#b56868;
 }
 
 /* Dashboard photo rows */
@@ -154,10 +290,11 @@ button:hover{
     display:flex;
     justify-content:space-between;
     align-items:center;
-    background:#2a2a2a;
+    background:#f5f0ea;
     padding:15px;
-    border-radius:8px;
+    border-radius:10px;
     margin-top:15px;
+    border:1px solid #ede5db;
 }
 
 /* Logout button */
@@ -166,22 +303,116 @@ button:hover{
     position:fixed;
     top:20px;
     right:20px;
-    background:#c62828;
-    color:white;
+    background:#c97b7b;
+    color:#fff;
+    z-index:100;
 }
 
 .logout:hover{
-    background:#a81d1d;
+    background:#b56868;
+}
+
+.dashboard-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:25px;
+}
+
+.photo-item,
+.review-item{
+    background:#f5f0ea;
+    padding:15px;
+    margin-top:15px;
+    border-radius:12px;
+    display:flex;
+    justify-content:space-between;
+    gap:15px;
+    align-items:center;
+    border:1px solid #ede5db;
+}
+
+.review-item p{
+    margin-top:8px;
+    color:#6b5d50;
+}
+
+.lightbox{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(74,63,53,.85);
+    justify-content:center;
+    align-items:center;
+    z-index:999;
+}
+
+.lightbox img{
+    max-width:90%;
+    max-height:90%;
+    border-radius:12px;
+    box-shadow:0 8px 40px rgba(0,0,0,.3);
+}
+
+.close{
+    position:absolute;
+    top:25px;
+    right:35px;
+    width:auto;
+    background:transparent;
+    color:#fff;
+    font-size:44px;
+    line-height:1;
+}
+
+.close:hover{
+    background:transparent;
+    color:#f0e8de;
+}
+
+.login-page{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+    background:linear-gradient(160deg,#faf6f1,#f0e8de);
+}
+
+.login{
+    background:#fff;
+    padding:40px;
+    border-radius:20px;
+    width:min(350px,90vw);
+    text-align:center;
+    box-shadow:0 8px 32px rgba(92,74,58,.1);
+    border:1px solid #ede5db;
+}
+
+.login h1{
+    font-family:"Lora", Georgia, serif;
+    margin-bottom:20px;
+    color:#5c4a3a;
+}
+
+.login a{
+    color:#c4886b;
+    font-weight:600;
+}
+
+.small-text{
+    color:#9a8b7d;
+    margin:15px 0;
+    font-size:14px;
 }
 
 /* Footer */
 
 footer{
-    background:#000;
-    color:#aaa;
+    background:#f0e8de;
+    color:#7a6b5d;
     text-align:center;
-    padding:30px;
+    padding:28px;
     margin-top:50px;
+    border-top:2px solid #d4c4b0;
 }
 
 /* Mobile */
@@ -189,7 +420,12 @@ footer{
 @media(max-width:768px){
 
 header h1{
-    font-size:32px;
+    font-size:28px;
+}
+
+nav a{
+    display:inline-block;
+    margin:6px 8px;
 }
 
 .gallery{
@@ -199,6 +435,12 @@ header h1{
 .photo{
     flex-direction:column;
     gap:15px;
+    align-items:flex-start;
+}
+
+.photo-item,
+.review-item{
+    flex-direction:column;
     align-items:flex-start;
 }
 
