@@ -9,71 +9,38 @@ function logout() {
     window.location.href = "admin.html";
 }
 
-// Load gallery
-function loadGallery() {
-    const gallery = document.getElementById("gallery");
-
-    if (!gallery) return;
-
-    let photos = JSON.parse(localStorage.getItem("photos")) || [];
-
-    gallery.innerHTML = "";
-
-    photos.forEach((photo, index) => {
-
-        gallery.innerHTML += `
-
-        <div class="card">
-
-            <img src="${photo.image}" alt="${photo.name}">
-
-            <div style="padding:20px">
-
-                <h3>${photo.name}</h3>
-
-                <p>${photo.caption}</p>
-
-            </div>
-
-        </div>
-
-        `;
-
-    });
-
-}
-
 // Add photo
 function addPhoto() {
 
-    let name = document.getElementById("photoName").value;
-    let caption = document.getElementById("photoCaption").value;
-    let image = document.getElementById("photoImage").value;
+    const name = document.getElementById("photoName").value;
+    const caption = document.getElementById("photoCaption").value;
+    const file = document.getElementById("photoImage").files[0];
 
-    if(name==""||caption==""||image==""){
-
-        alert("Please complete every field.");
-
+    if (!name || !caption || !file) {
+        alert("Please complete all fields.");
         return;
+    }
+
+    const reader = new FileReader();
+
+    reader.onload = function(e){
+
+        let photos = JSON.parse(localStorage.getItem("photos")) || [];
+
+        photos.unshift({
+            name: name,
+            caption: caption,
+            image: e.target.result
+        });
+
+        localStorage.setItem("photos", JSON.stringify(photos));
+
+        alert("Photo uploaded!");
+
+        location.reload();
 
     }
 
-    let photos = JSON.parse(localStorage.getItem("photos")) || [];
-
-    photos.push({
-
-        name,
-
-        caption,
-
-        image
-
-    });
-
-    localStorage.setItem("photos",JSON.stringify(photos));
-
-    alert("Photo added!");
-
-    location.reload();
+    reader.readAsDataURL(file);
 
 }
