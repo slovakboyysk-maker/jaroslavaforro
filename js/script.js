@@ -1,8 +1,6 @@
 const PASSWORD = "Jaroslava2025";
-const MANTLE_NAMESPACE = STORAGE_CONFIG.mantleNamespace;
-const MANTLE_KEY = STORAGE_CONFIG.mantleKey;
-const MANTLE_BASE = `https://mantledb.sh/v2/${MANTLE_NAMESPACE}`;
-const MAX_IMAGE_BYTES = 50000;
+const API_BASE = STORAGE_CONFIG.apiBase;
+const MAX_IMAGE_BYTES = 45000;
 
 let photosCache = [];
 let reviewsCache = [];
@@ -21,15 +19,14 @@ function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
-async function mantleRequest(path, method = "GET", body = null) {
+async function storageRequest(path, method = "GET", body = null) {
   let response;
 
   try {
     const options = {
       method,
       headers: {
-        "Content-Type": "application/json",
-        "X-Mantle-Key": MANTLE_KEY
+        "Content-Type": "application/json"
       }
     };
 
@@ -37,9 +34,9 @@ async function mantleRequest(path, method = "GET", body = null) {
       options.body = JSON.stringify(body);
     }
 
-    response = await fetch(`${MANTLE_BASE}${path}`, options);
+    response = await fetch(`${API_BASE}${path}`, options);
   } catch (error) {
-    throw new Error("Could not connect to site storage. Check your internet connection and try again.");
+    throw new Error("Could not connect to site storage. Refresh the page and try again.");
   }
 
   if (response.status === 404) {
@@ -112,8 +109,8 @@ function resizeToDataUrl(file, maxSize, quality) {
 }
 
 async function compressImage(file) {
-  let quality = 0.82;
-  let maxSize = 1200;
+  let quality = 0.8;
+  let maxSize = 1000;
 
   while (quality >= 0.35) {
     const dataUrl = await resizeToDataUrl(file, maxSize, quality);
@@ -123,14 +120,14 @@ async function compressImage(file) {
     }
 
     quality -= 0.08;
-    maxSize -= 120;
+    maxSize -= 100;
   }
 
   throw new Error("Image is too large. Please choose a smaller photo.");
 }
 
 async function loadPhotos() {
-  const index = await mantleRequest("/photos-index");
+  const index = await storageRequest("/photos-index");
   const entries = Array.isArray(index) ? index : [];
 
   if (entries.length === 0) {
@@ -139,7 +136,7 @@ async function loadPhotos() {
   }
 
   const photos = await Promise.all(entries.map(async (entry) => {
-    const stored = await mantleRequest(`/photo-${entry.id}`);
+    const stored = await storageRequest(`/photo-${entry.id}`);
 
     return {
       id: entry.id,
@@ -154,7 +151,7 @@ async function loadPhotos() {
 }
 
 async function loadReviews() {
-  const reviews = await mantleRequest("/reviews");
+  const reviews = await storageRequest("/reviews");
   reviewsCache = Array.isArray(reviews) ? reviews : [];
   return reviewsCache;
 }
@@ -168,11 +165,11 @@ function getReviews() {
 }
 
 async function savePhotoIndex(entries) {
-  await mantleRequest("/photos-index", "POST", entries);
+  await storageRequest("/photos-index", "POST", entries);
 }
 
 async function saveReviews(reviews) {
-  await mantleRequest("/reviews", "POST", reviews);
+  await storageRequest("/reviews", "POST", reviews);
   reviewsCache = reviews;
 }
 
@@ -212,15 +209,17 @@ async function addPhoto(event) {
     submitButton.disabled = true;
     submitButton.textContent = "Checking file...";
 
-    await validateUploadFile(file);
+    if (typeof validateUploadFile === "function") {
+      await validateUploadFile(file);
+    }
 
     submitButton.textContent = "Uploading...";
 
     const image = await compressImage(file);
     const id = Date.now().toString();
-    const index = await mantleRequest("/photos-index") || [];
+    const index = await storageRequest("/photos-index") || [];
 
-    await mantleRequest(`/photo-${id}`, "POST", { image });
+    await storageRequest(`/photo-${id}`, "POST", { image });
 
     index.unshift({ id, name, caption });
     await savePhotoIndex(index);
@@ -242,9 +241,9 @@ async function deletePhoto(index) {
     const photo = getPhotos()[index];
     if (!photo) return;
 
-    const remainingIndex = (await mantleRequest("/photos-index") || []).filter((entry) => entry.id !== photo.id);
+    const remainingIndex = (await storageRequest("/photos-index") || []).filter((entry) => entry.id !== photo.id);
     await savePhotoIndex(remainingIndex);
-    await mantleRequest(`/photo-${photo.id}`, "DELETE");
+    await storageRequest(`/photo-${photo.id}`, "DELETE");
     await loadPhotos();
     await displayDashboardPhotos();
   } catch (error) {

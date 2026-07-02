@@ -32,10 +32,8 @@ function findDangerousContent(buffer) {
   const view = new Uint8Array(buffer);
 
   for (const signature of DANGEROUS_SIGNATURES) {
-    for (let offset = 0; offset <= view.length - signature.bytes.length; offset += 1) {
-      if (bytesMatch(view, signature.bytes, offset)) {
-        return signature.name;
-      }
+    if (bytesMatch(view, signature.bytes, 0)) {
+      return signature.name;
     }
   }
 
@@ -90,7 +88,7 @@ async function validateUploadFile(file) {
     throw new Error("This file type is not allowed. Please upload an image only.");
   }
 
-  if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+  if (!ALLOWED_IMAGE_TYPES.includes(file.type) && !file.type.startsWith("image/")) {
     throw new Error("Only JPG, PNG, WEBP, and GIF images are allowed.");
   }
 
@@ -137,8 +135,16 @@ async function scanBlobBeforeDownload(blob) {
 async function dataUrlToBlob(dataUrl) {
   verifyDataUrlImage(dataUrl);
 
-  const response = await fetch(dataUrl);
-  const blob = await response.blob();
+  const [header, base64] = dataUrl.split(",");
+  const mime = header.match(/data:([^;]+)/)?.[1] || "image/jpeg";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+
+  for (let index = 0; index < binary.length; index += 1) {
+    bytes[index] = binary.charCodeAt(index);
+  }
+
+  const blob = new Blob([bytes], { type: mime });
   await scanBlobBeforeDownload(blob);
 
   return blob;
