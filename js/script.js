@@ -1,7 +1,6 @@
 const PASSWORD = "Jaroslava2025";
 const MANTLE_BASE = `https://mantledb.sh/v2/${STORAGE_CONFIG.mantleNamespace}`;
 const MANTLE_KEY = STORAGE_CONFIG.mantleKey;
-const PROXY_BASE = STORAGE_CONFIG.proxyBase;
 const MAX_IMAGE_BYTES = 45000;
 
 let photosCache = [];
@@ -29,15 +28,7 @@ async function parseStorageResponse(response) {
   const text = await response.text();
 
   if (!response.ok) {
-    if (response.status === 405 || text.includes("<html")) {
-      throw new Error("STORAGE_ROUTE_FAILED");
-    }
-
-    if (response.status === 413 || text.includes("64 KB")) {
-      throw new Error("Image is too large. Try a smaller photo.");
-    }
-
-    throw new Error("Could not save to site storage.");
+    throw new Error("Could not save photo. Try a smaller image.");
   }
 
   if (!text) {
@@ -51,7 +42,7 @@ async function parseStorageResponse(response) {
   }
 }
 
-async function requestDirectStorage(path, method, body) {
+async function storageRequest(path, method = "GET", body = null) {
   const options = {
     method,
     headers: {
@@ -64,46 +55,15 @@ async function requestDirectStorage(path, method, body) {
     options.body = JSON.stringify(body);
   }
 
-  const response = await fetch(`${MANTLE_BASE}${path}`, options);
-  return parseStorageResponse(response);
-}
+  let response;
 
-async function requestProxyStorage(path, method, body) {
-  const options = {
-    method,
-    headers: {
-      "Content-Type": "application/json"
-    }
-  };
-
-  if (body !== null) {
-    options.body = JSON.stringify(body);
-  }
-
-  const response = await fetch(`${PROXY_BASE}${path}`, options);
-  return parseStorageResponse(response);
-}
-
-async function storageRequest(path, method = "GET", body = null) {
   try {
-    return await requestDirectStorage(path, method, body);
+    response = await fetch(`${MANTLE_BASE}${path}`, options);
   } catch (error) {
-    if (error.message !== "STORAGE_ROUTE_FAILED" && error.message !== "Failed to fetch") {
-      if (error.message === "Could not save to site storage." || error.message.includes("too large")) {
-        throw error;
-      }
-    }
-
-    try {
-      if ("serviceWorker" in navigator) {
-        await navigator.serviceWorker.ready;
-      }
-
-      return await requestProxyStorage(path, method, body);
-    } catch (proxyError) {
-      throw new Error("Could not upload right now. Refresh the page and try again.");
-    }
+    throw new Error("Could not connect. Check your internet and try again.");
   }
+
+  return parseStorageResponse(response);
 }
 
 function dataUrlByteSize(dataUrl) {
@@ -359,6 +319,19 @@ function closeImage() {
   if (lightbox) lightbox.style.display = "none";
 }
 
+function downloadPhoto(index) {
+  const photo = getPhotos()[index];
+  if (!photo?.image) return;
+
+  const safeName = (photo.name || "photo").replace(/[^\w\- ]+/g, "").trim() || "photo";
+  const link = document.createElement("a");
+  link.href = photo.image;
+  link.download = `${safeName}.jpg`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+}
+
 async function displayPublicReviews() {
   const container = document.getElementById("reviewsList") || document.getElementById("reviews");
   if (!container) return;
@@ -490,6 +463,14 @@ async function displayDashboardReviews() {
 }
 
 document.addEventListener("DOMContentLoaded", function () {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.getRegistrations().then(function (registrations) {
+      registrations.forEach(function (registration) {
+        registration.unregister();
+      });
+    });
+  }
+
   if (document.getElementById("galleryList")) {
     displayDashboardPhotos();
   }
