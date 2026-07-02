@@ -67,6 +67,7 @@ Professional photography capturing beautiful moments, portraits, family sessions
 <div id="lightbox" class="lightbox">
 <button class="close" type="button" onclick="closeImage()">×</button>
 <img id="lightboxImage" alt="Selected gallery photograph">
+<button id="lightboxDownload" class="lightbox-download" type="button" onclick="downloadPhoto(currentLightboxIndex)">Download</button>
 </div>
 
 <footer>
@@ -74,6 +75,7 @@ Professional photography capturing beautiful moments, portraits, family sessions
 </footer>
 
 <script src="js/config.js"></script>
+<script src="js/security.js"></script>
 <script src="js/script.js"></script>
 <script>
 displayGallery();

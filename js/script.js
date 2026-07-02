@@ -6,6 +6,7 @@ const MAX_IMAGE_BYTES = 50000;
 
 let photosCache = [];
 let reviewsCache = [];
+let currentLightboxIndex = null;
 
 function isAdmin() {
   return sessionStorage.getItem("admin") === "true";
@@ -209,6 +210,10 @@ async function addPhoto(event) {
 
   try {
     submitButton.disabled = true;
+    submitButton.textContent = "Checking file...";
+
+    await validateUploadFile(file);
+
     submitButton.textContent = "Uploading...";
 
     const image = await compressImage(file);
@@ -293,6 +298,7 @@ async function displayGallery() {
       <div class="photo-info">
         <h3>${escapeHtml(photo.name)}</h3>
         <p>${escapeHtml(photo.caption)}</p>
+        <button class="download-button" type="button" onclick="downloadPhoto(${index})">Download</button>
       </div>
     </article>
   `).join("");
@@ -307,12 +313,14 @@ function openImage(indexOrSrc) {
   const lightboxImage = document.getElementById("lightboxImage");
   if (!lightbox || !lightboxImage) return;
 
+  currentLightboxIndex = typeof indexOrSrc === "number" ? indexOrSrc : null;
   lightbox.style.display = "flex";
   lightboxImage.src = src;
 }
 
 function closeImage() {
   const lightbox = document.getElementById("lightbox");
+  currentLightboxIndex = null;
   if (lightbox) lightbox.style.display = "none";
 }
 
