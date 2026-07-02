@@ -4,117 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reviews | Jaroslava Forro Photography</title>
-
-<style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
-font-family:Arial,Helvetica,sans-serif;
-}
-
-body{
-background:#111;
-color:white;
-}
-
-header{
-background:#000;
-padding:20px;
-text-align:center;
-}
-
-nav{
-margin-top:15px;
-}
-
-nav a{
-color:white;
-text-decoration:none;
-margin:0 15px;
-font-weight:bold;
-}
-
-nav a:hover{
-color:gold;
-}
-
-.container{
-width:90%;
-max-width:900px;
-margin:auto;
-padding:40px 0;
-}
-
-.review{
-background:#222;
-padding:20px;
-margin:20px 0;
-border-radius:10px;
-}
-
-.review h3{
-margin-bottom:10px;
-color:gold;
-}
-
-.stars{
-font-size:20px;
-color:gold;
-margin-bottom:10px;
-}
-
-input,
-textarea,
-select{
-width:100%;
-padding:12px;
-margin-top:10px;
-border:none;
-border-radius:8px;
-font-size:16px;
-}
-
-button{
-width:100%;
-padding:14px;
-margin-top:15px;
-background:gold;
-border:none;
-font-size:17px;
-font-weight:bold;
-cursor:pointer;
-border-radius:8px;
-}
-
-button:hover{
-background:#d4af37;
-}
-</style>
-
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@500;600&family=Nunito:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-
 <header>
-
 <h1>Jaroslava Forro Photography</h1>
-
+<p>Client Reviews</p>
 <nav>
 <a href="index.html">Home</a>
-<a href="gallery.html">Gallery</a>
+<a href="index.html#gallery">Gallery</a>
 <a href="reviews.html">Reviews</a>
 <a href="admin.html">Admin</a>
 </nav>
-
 </header>
 
-<div class="container">
-
+<main class="container">
+<section class="card">
 <h2>Leave a Review</h2>
-
-<input id="name" placeholder="Your Name">
-
+<form id="publicReviewForm">
+<input id="name" placeholder="Your Name" required>
 <select id="rating">
 <option value="★★★★★">★★★★★</option>
 <option value="★★★★☆">★★★★☆</option>
@@ -122,87 +34,22 @@ background:#d4af37;
 <option value="★★☆☆☆">★★☆☆☆</option>
 <option value="★☆☆☆☆">★☆☆☆☆</option>
 </select>
+<textarea id="message" placeholder="Write your review..." required></textarea>
+<button type="submit">Submit Review</button>
+</form>
+</section>
 
-<textarea id="message" placeholder="Write your review..."></textarea>
+<h2 class="page-title">Reviews</h2>
+<div id="reviewsList" class="reviews-grid"></div>
+</main>
 
-<button onclick="addReview()">Submit Review</button>
-
-<h2 style="margin-top:50px;">Reviews</h2>
-
-<div id="reviews"></div>
-
-</div>
-
+<script src="js/script.js"></script>
 <script>
+displayPublicReviews();
 
-let reviews = JSON.parse(localStorage.getItem("reviews")) || [];
-
-function saveReviews(){
-localStorage.setItem("reviews",JSON.stringify(reviews));
-}
-
-function displayReviews(){
-
-const container=document.getElementById("reviews");
-
-container.innerHTML="";
-
-reviews.forEach((review,index)=>{
-
-container.innerHTML += `
-<div class="review">
-
-<h3>${review.name}</h3>
-
-<div class="stars">${review.rating}</div>
-
-<p>${review.message}</p>
-
-</div>
-`;
-
+document.getElementById("publicReviewForm").addEventListener("submit", function (event) {
+  submitPublicReview(event);
 });
-
-}
-
-function addReview(){
-
-const name=document.getElementById("name").value;
-
-const rating=document.getElementById("rating").value;
-
-const message=document.getElementById("message").value;
-
-if(name==""||message==""){
-alert("Please fill in all fields.");
-return;
-}
-
-reviews.unshift({
-name,
-rating,
-message
-});
-
-saveReviews();
-
-displayReviews();
-
-document.getElementById("name").value="";
-document.getElementById("message").value="";
-
-alert("Thank you for your review!");
-
-}
-
-displayReviews();
-
 </script>
-
-</body>
-</html>
-
-</script>
-
 </body>
 </html>
