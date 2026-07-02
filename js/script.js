@@ -1,5 +1,7 @@
 const PASSWORD = "Jaroslava2025";
-const API_BASE = STORAGE_CONFIG.apiBase;
+const MANTLE_BASE = `https://mantledb.sh/v2/${STORAGE_CONFIG.mantleNamespace}`;
+const MANTLE_KEY = STORAGE_CONFIG.mantleKey;
+const PROXY_BASE = STORAGE_CONFIG.proxyBase;
 const MAX_IMAGE_BYTES = 45000;
 
 let photosCache = [];
@@ -19,26 +21,7 @@ function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
-async function storageRequest(path, method = "GET", body = null) {
-  let response;
-
-  try {
-    const options = {
-      method,
-      headers: {
-        "Content-Type": "application/json"
-      }
-    };
-
-    if (body !== null) {
-      options.body = JSON.stringify(body);
-    }
-
-    response = await fetch(`${API_BASE}${path}`, options);
-  } catch (error) {
-    throw new Error("Could not connect to site storage. Refresh the page and try again.");
-  }
-
+async function parseStorageResponse(response) {
   if (response.status === 404) {
     return null;
   }
@@ -46,11 +29,15 @@ async function storageRequest(path, method = "GET", body = null) {
   const text = await response.text();
 
   if (!response.ok) {
+    if (response.status === 405 || text.includes("<html")) {
+      throw new Error("STORAGE_ROUTE_FAILED");
+    }
+
     if (response.status === 413 || text.includes("64 KB")) {
       throw new Error("Image is too large. Try a smaller photo.");
     }
 
-    throw new Error(text || "Could not save to site storage.");
+    throw new Error("Could not save to site storage.");
   }
 
   if (!text) {
@@ -61,6 +48,61 @@ async function storageRequest(path, method = "GET", body = null) {
     return JSON.parse(text);
   } catch {
     return text;
+  }
+}
+
+async function requestDirectStorage(path, method, body) {
+  const options = {
+    method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Mantle-Key": MANTLE_KEY
+    }
+  };
+
+  if (body !== null) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${MANTLE_BASE}${path}`, options);
+  return parseStorageResponse(response);
+}
+
+async function requestProxyStorage(path, method, body) {
+  const options = {
+    method,
+    headers: {
+      "Content-Type": "application/json"
+    }
+  };
+
+  if (body !== null) {
+    options.body = JSON.stringify(body);
+  }
+
+  const response = await fetch(`${PROXY_BASE}${path}`, options);
+  return parseStorageResponse(response);
+}
+
+async function storageRequest(path, method = "GET", body = null) {
+  try {
+    return await requestDirectStorage(path, method, body);
+  } catch (error) {
+    if (error.message !== "STORAGE_ROUTE_FAILED" && error.message !== "Failed to fetch") {
+      if (error.message === "Could not save to site storage." || error.message.includes("too large")) {
+        throw error;
+      }
+    }
+
+    try {
+      if ("serviceWorker" in navigator) {
+        await navigator.serviceWorker.ready;
+      }
+
+      return await requestProxyStorage(path, method, body);
+    } catch (proxyError) {
+      throw new Error("Could not upload right now. Refresh the page and try again.");
+    }
   }
 }
 
